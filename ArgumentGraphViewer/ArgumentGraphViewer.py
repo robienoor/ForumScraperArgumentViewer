@@ -1,25 +1,41 @@
 from dataBaseConnector import dataBaseConnector
+from dungEvaluator import dungEvaluator
 
-def startArgGraph(drug):
+def evalArgGraph():
 
     # TODO: If I'm not in the folder how do I go a level up and get the file in the higher folder
     dbobj = dataBaseConnector('DBConnector.ini')
 
-    experiencesSQL = "SELECT * FROM Experiences WHERE Drug = '%s'" % (drug)
-    experiencesData = dbobj.execute(experiencesSQL)
+    argTallySQL = "SELECT * FROM CompleteArgTally"
+    results = dbobj.execute(argTallySQL);
 
-    sideEffectsPresentSQL = "SELECT * FROM SideEffectsPresent Drug = '%s'" % (drug)
-    sideEffectsPresentData = dbobj.execute(sideEffectsPresentSQL) 
+    for row in results:
+        row = dict(row)
 
-    symptomConditionSQL = "SELECT * FROM SymptomCondition Drug = '%s'" % (drug)
-    symptomConditionData = dbobj.execute(symptomConditionSQL)
+        post = row['post']
+        rating = row['Rating']
 
-    supplementaryDrugsSQL = "SELECT * FROM SupplementaryDrugs = '%s'" % (drug)
-    supplementaryDrugsData = dbobj.execute(supplementaryDrugsSQL)
+        noA = row['PosExp']
+        noB = row['NegExp']
+        noC = row['NoSideEffectsPresent']
+        noD = row['SideEffectsPresent']
+        noE = row['SymtomsOK']
+        noF = row['SymtomsNotOK']
 
-    print('Pulled out all the data')
+        dungEval = dungEvaluator(noA, noB, noC, noD, noE, noF)
+        groundedExtension = dungEval.getGroundedExtensions()
 
+        if not groundedExtension:
+            groundedExtensionStr = ''
+        else:
+            groundedExtensionStr = str(groundedExtension).strip('[]')
+            groundedExtensionStr = str(groundedExtension).strip("'")
 
-#drug = input('Please enter a medication:\n')
+        insertSQL = "INSERT INTO dungtally (Post, GroundedSemantics, Rating) VALUES (%s, %s, %s)"
+        data = (post, groundedExtensionStr, rating)
+        dbobj.insert(insertSQL, data)
 
-startArgGraph('tamoxifen')
+    print('success')
+    
+
+evalArgGraph()

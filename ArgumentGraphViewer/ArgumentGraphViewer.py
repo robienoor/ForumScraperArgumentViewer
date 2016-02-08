@@ -22,17 +22,29 @@ def evalArgGraph():
         noE = row['SymtomsOK']
         noF = row['SymtomsNotOK']
 
+        positiveNodes = ['A', 'C', 'E']
+
         dungEval = dungEvaluator(noA, noB, noC, noD, noE, noF)
         groundedExtension = dungEval.getGroundedExtensions()
 
         if not groundedExtension:
             groundedExtensionStr = ''
+            sentimentClass = '0'
         else:
             groundedExtensionStr = str(groundedExtension).strip('[]')
             groundedExtensionStr = str(groundedExtension).strip("'")
 
-        insertSQL = "INSERT INTO dungtally (Post, GroundedSemantics, Rating) VALUES (%s, %s, %s)"
-        data = (post, groundedExtensionStr, rating)
+            # TODO: Dangerously assumes that no sets exist with two classes. Move to DB
+            for node in groundedExtension:
+                if node[0] in positiveNodes:
+                    sentimentClass = '1'
+                    break
+                else:
+                    sentimentClass = '-1'
+        
+
+        insertSQL = "INSERT INTO dungtally (Post, GroundedSemantics, Rating, Class) VALUES (%s, %s, %s, %s)"
+        data = (post, groundedExtensionStr, rating, sentimentClass)
         dbobj.insert(insertSQL, data)
 
     print('success')
